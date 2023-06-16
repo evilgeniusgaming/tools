@@ -123,7 +123,7 @@ const types = {
 		collection: "sounds"
 	},
 	RollTable: {
-		colletion: "tables",
+		collection: "tables",
 		embedded: ["results"]
 	},
 	Scene: {
