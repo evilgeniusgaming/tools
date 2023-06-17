@@ -2,6 +2,13 @@
 
 Command line tool for developer operations for the Everyday Heroes system and modules.
 
+## Build Command
+
+```shell-script
+# Compile all CSS, javascript, and compendium packs for release
+ehcli build
+```
+
 ## Compile Command
 
 ```shell-script
