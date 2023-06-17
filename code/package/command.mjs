@@ -1,9 +1,8 @@
 import Chalk from "chalk";
-import { readdir, readFile } from "node:fs/promises";
-import path from "path";
 import { packClassicLevel, unpackClassicLevel } from "./classic-level.mjs";
 import log from "../log.mjs";
 import { packNedb, unpackNedb } from "./nedb.mjs";
+import detectPackages from "../packages.mjs";
 
 /**
  * Get the command object for the package command.
@@ -56,43 +55,6 @@ export default function getCommand() {
 	/* ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~ */
 
 	/**
-	 * Scan the folder for package registrations.
-	 * @param {string} prefix - Folder prefix to search subfolders.
-	 * @returns {Object<string, object>} - Mapping of module IDs and manifest contents.
-	 */
-	async function _detectPackages(prefix) {
-		const manifestNames = ["system", "module", "world"];
-
-		const paths = [];
-		if ( prefix ) {
-			// TODO: Find all packages with prefix
-		} else {
-			paths.push("./");
-		}
-
-		const packages = {};
-		for ( const directory of paths ) {
-			let manifest;
-			let type;
-			for ( const manifestType of manifestNames ) {
-				try {
-					const manifestPath = path.join(directory, `${manifestType}.json`);
-					manifest = JSON.parse(await readFile(manifestPath, { encoding: "utf8" }));
-					type = manifestType;
-				} catch(err) {
-					continue;
-				}
-				break;
-			}
-			if ( manifest ) packages[manifest.id] = { type, directory, manifest };
-		}
-
-		return packages;
-	}
-
-	/* ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~ */
-
-	/**
 	 * Load a pack from a directory and serialize the DB entries, each to their own file
 	 * @param {object} argv - The command line arguments.
 	 * @returns {Promise<void>}
@@ -101,7 +63,7 @@ export default function getCommand() {
 	async function _handleUnpack(argv) {
 		const dbMode = argv.nedb ? "nedb" : "classic-level";
 		const compendiumName = argv.pack ?? argv.value;
-		const packages = await _detectPackages();
+		const packages = await detectPackages();
 
 		// Loop through each package
 		for ( const packageData of Object.values(packages) ) {
@@ -130,7 +92,7 @@ export default function getCommand() {
 	async function _handlePack(argv) {
 		const dbMode = argv.nedb ? "nedb" : "classic-level";
 		const compendiumName = argv.pack ?? argv.value;
-		const packages = await _detectPackages();
+		const packages = await detectPackages();
 
 		// Loop through each package
 		for ( const packageData of Object.values(packages) ) {
