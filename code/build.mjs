@@ -17,6 +17,11 @@ export default function getCommand() {
 				descibe: "ID of the package within which to work.",
 				type: "string"
 			});
+
+			yargs.option("prefix", {
+				descibe: "Prefix to use when searching for modules within subfolders.",
+				type: "string"
+			});
 		},
 		handler: _handleBuild
 	};
@@ -30,7 +35,7 @@ export default function getCommand() {
 	 * @private
 	 */
 	async function _handleBuild(argv) {
-		for ( const packageData of Object.values(await detectPackages()) ) {
+		for ( const packageData of Object.values(await detectPackages({ id: argv.id, prefix: argv.prefix })) ) {
 			for ( const stylePath of packageData.manifest.styles ?? [] ) {
 				try {
 					await compileCSS(packageData, stylePath, argv);

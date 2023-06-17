@@ -25,18 +25,34 @@ export default function getCommand() {
 			});
 
 			yargs.option("id", {
-				descibe: "ID of the package within which to work.",
+				describe: "ID of the package within which to work.",
+				type: "string"
+			});
+
+			yargs.option("prefix", {
+				describe: "Prefix to use when searching for modules within subfolders.",
 				type: "string"
 			});
 
 			yargs.option("pack", {
 				alias: "n",
-				descibe: "Name of compendium pack to operate upon.",
+				describe: "Name of compendium pack to operate upon.",
 				type: "string"
 			});
 
 			yargs.option("nedb", {
 				describe: "Whether to use NeDB instead of ClassicLevel when packing & unpacking.",
+				type: "boolean"
+			});
+
+			yargs.option("both", {
+				describe: "Whether to pack both NeDB and ClassicLevel at the same time. Only available for the pack command.",
+				type: "boolean"
+			});
+
+			yargs.option("verbose", {
+				alias: "v",
+				describe: "Enable verbose logging.",
 				type: "boolean"
 			});
 		},
@@ -61,9 +77,14 @@ export default function getCommand() {
 	 * @private
 	 */
 	async function _handleUnpack(argv) {
+		if ( argv.both ) {
+			log(`${Chalk.red("Error:")} Operating on both database types not possible during unpacking.`);
+			return;
+		}
+	
 		const dbMode = argv.nedb ? "nedb" : "classic-level";
 		const compendiumName = argv.pack ?? argv.value;
-		const packages = await detectPackages();
+		const packages = await detectPackages({ id: argv.id, prefix: argv.prefix });
 
 		// Loop through each package
 		for ( const packageData of Object.values(packages) ) {
@@ -73,7 +94,6 @@ export default function getCommand() {
 				try {
 					if ( dbMode === "nedb" ) await unpackNedb(packageData, compendiumData, argv);
 					else if ( dbMode === "classic-level" ) await unpackClassicLevel(packageData, compendiumData, argv);
-					else throw new Error(`${Chalk.red("Error:")} Operating on both database types not possible during unpacking.`);
 				} catch(err) {
 					log(err.message);
 				}
@@ -90,9 +110,9 @@ export default function getCommand() {
 	 * @private
 	 */
 	async function _handlePack(argv) {
-		const dbMode = argv.nedb ? "nedb" : "classic-level";
+		const dbMode = argv.both ? "both" : argv.nedb ? "nedb" : "classic-level";
 		const compendiumName = argv.pack ?? argv.value;
-		const packages = await detectPackages();
+		const packages = await detectPackages({ id: argv.id, prefix: argv.prefix });
 
 		// Loop through each package
 		for ( const packageData of Object.values(packages) ) {
@@ -100,9 +120,8 @@ export default function getCommand() {
 			for ( const compendiumData of packageData.manifest.packs ?? [] ) {
 				if ( compendiumName && (compendiumData.name !== compendiumName) ) continue;
 				try {
-					if ( dbMode === "nedb" ) await packNedb(packageData, compendiumData, argv);
-					else if ( dbMode === "classic-level" ) await packClassicLevel(packageData, compendiumData, argv);
-					else throw new Error(`${Chalk.red("Error:")} Packing both database formats not yet supported.`);
+					if ( ["nedb", "both"].includes(dbMode) ) await packNedb(packageData, compendiumData, argv);
+					if ( ["classic-level", "both"].includes(dbMode) ) await packClassicLevel(packageData, compendiumData, argv);
 				} catch(err) {
 					log(err.message);
 				}

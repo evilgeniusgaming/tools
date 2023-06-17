@@ -22,6 +22,11 @@ export default function getCommand() {
 				descibe: "ID of the package within which to work.",
 				type: "string"
 			});
+
+			yargs.option("prefix", {
+				descibe: "Prefix to use when searching for modules within subfolders.",
+				type: "string"
+			});
 		},
 		handler: async argv => {
 			switch ( argv.action ) {
@@ -44,7 +49,7 @@ export default function getCommand() {
 	 * @private
 	 */
 	async function _handleCSS(argv) {
-		for ( const packageData of Object.values(await detectPackages()) ) {
+		for ( const packageData of Object.values(await detectPackages({ id: argv.id, prefix: argv.prefix })) ) {
 			for ( const stylePath of packageData.manifest.styles ?? [] ) {
 				try {
 					await compileCSS(packageData, stylePath, argv);
@@ -64,7 +69,7 @@ export default function getCommand() {
 	 * @private
 	 */
 	async function _handleJavascript(argv) {
-		for ( const packageData of Object.values(await detectPackages()) ) {
+		for ( const packageData of Object.values(await detectPackages({ id: argv.id, prefix: argv.prefix })) ) {
 			for ( const scriptPath of packageData.manifest.esmodules ?? [] ) {
 				try {
 					await compileJavascript(packageData, scriptPath, argv);

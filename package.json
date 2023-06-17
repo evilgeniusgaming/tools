@@ -2,7 +2,7 @@
 	"name": "@evilgeniusgaming/everyday-heroes-cli",
 	"productName": "Evil Genius Build Tools",
 	"description": "Everyday Heroes Tooling for Foundry VTT",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"author": {
 		"name": "Jeff “Arbron” Hitchcock"
 	},

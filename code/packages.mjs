@@ -1,21 +1,27 @@
 import Chalk from "chalk";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import log from "./log.mjs";
 import Path from "path";
 
 /**
  * Scan the folder for package manifests.
- * @param {string} [prefix] - Folder prefix to search subfolders.
+ * @param {object} [params]
+ * @param {string} [params.id] - Detect a module with a specific ID.
+ * @param {string} [params.prefix] - Find all modules within folders with this prefix.
  * @returns {Object<string, object>} - Mapping of module IDs and manifest contents.
  */
-export default async function detectPackages(prefix) {
+export default async function detectPackages({ id, prefix }={}) {
 	const manifestNames = ["system", "module", "world"];
 
 	const paths = [];
 	if ( prefix ) {
-		// TODO: Find all packages with prefix
+		const directory = await readdir("./", { withFileTypes: true });
+		for ( const entry of directory ) {
+			if ( !entry.isDirectory() || !entry.name.startsWith(prefix) ) continue;
+			paths.push(entry.name);
+		}
 	} else {
-		paths.push("./");
+		paths.push(id ?? "./");
 	}
 
 	const packages = {};
@@ -32,6 +38,7 @@ export default async function detectPackages(prefix) {
 			}
 			break;
 		}
+		if ( id && manifest?.id !== id ) continue;
 		if ( manifest ) packages[manifest.id] = { type, directory, manifest };
 	}
 
