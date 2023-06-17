@@ -1,3 +1,4 @@
+import compileCSS from "./css.mjs";
 import compileJavascript from "./javascript.mjs";
 import log from "../log.mjs";
 import detectPackages from "../packages.mjs";
@@ -14,7 +15,7 @@ export default function getCommand() {
 			yargs.positional("action", {
 				describe: "The action to perform",
 				type: "string",
-				choices: ["javascript"]
+				choices: ["css", "javascript"]
 			});
 
 			yargs.option("id", {
@@ -24,12 +25,35 @@ export default function getCommand() {
 		},
 		handler: async argv => {
 			switch ( argv.action ) {
+				case "css":
+					await _handleCSS(argv);
+					break;
 				case "javascript":
 					await _handleJavascript(argv);
 					break;
 			}
 		}
 	};
+
+	/* ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~ */
+
+	/**
+	 * Rollup all the package's CSS into a single file.
+	 * @param {object} argv - The command line arguments.
+	 * @returns {Promise<void>}
+	 * @private
+	 */
+	async function _handleCSS(argv) {
+		for ( const packageData of Object.values(await detectPackages()) ) {
+			for ( const stylePath of packageData.manifest.styles ?? [] ) {
+				try {
+					await compileCSS(packageData, stylePath, argv);
+				} catch(err) {
+					log(err.message);
+				}
+			}
+		}
+	}
 
 	/* ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~ */
 
