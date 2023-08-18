@@ -90,7 +90,7 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 		delete existingFiles[documentPath];
 	}
 
-	for ( const filename of Object.values(existingFiles) ) {
+	for ( const filename of Object.keys(existingFiles) ) {
 		rm(filename);
 		if ( argv.verbose ) log(`${Chalk.red("Removed")} ${filename}`);
 		stats.removed++;
