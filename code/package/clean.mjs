@@ -5,9 +5,10 @@
  * @param {string} [options.documentType] - Type of document being cleaned.
  * @param {boolean} [options.clearSourceId] - Should the core sourceId flag be deleted?
  * @param {boolean} [options.clearSorting] - Should the sort parameter be set to zero?
+ * @param {number} [options.ownership=0] - Value to reset default ownership to.
  */
-export function cleanPackEntry(data, { documentType, clearSourceId=false, clearSorting=false }={}) {
-	if ( data.ownership ) data.ownership = { default: 0 };
+export function cleanPackEntry(data, { documentType, clearSourceId=false, clearSorting=false, ownership=0 }={}) {
+	if ( data.ownership ) data.ownership = { default: ownership };
 	if ( data._stats?.lastModifiedBy ) data._stats.lastModifiedBy = "everyday00heroes";
 
 	// Remove empty entries in flags
@@ -27,6 +28,7 @@ export function cleanPackEntry(data, { documentType, clearSourceId=false, clearS
 
 	if ( data.effects ) data.effects.forEach(i => cleanPackEntry(i, { documentType: "ActiveEffect" }));
 	if ( data.items ) data.items.forEach(i => cleanPackEntry(i, { documentType: "Item" }));
+	if ( data.pages ) data.pages.forEach(i => cleanPackEntry(i, { documentType: "JournalEntryPage", ownership: -1 }));
 }
 
 /**

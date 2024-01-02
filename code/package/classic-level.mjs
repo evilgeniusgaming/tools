@@ -28,13 +28,14 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 	const db = new ClassicLevel(filename, { keyEncoded: "utf8", valueEncoding: "json" });
 
 	const outputDir = Path.join(packageData.directory, `packs/_source/${compendiumData.name}`);
-	if ( !existsSync(outputDir) ) mkdirSync(outputDir, { recursive: true });
+	if ( !argv.dryRun && !existsSync(outputDir) ) mkdirSync(outputDir, { recursive: true });
 	const existingFiles = await loadSources(outputDir);
 
 	if ( !argv.quiet ) log(`Unpacking "${Chalk.magenta(compendiumData.label)}" from ${
 		Chalk.blue(filename)} into ${Chalk.blue(outputDir)}`);
 
 	const documents = {};
+	const folders = {};
 	for await ( const [key, value] of db.iterator() ) {
 		let [types, ids] = key.slice(1).split("!");
 		types = types.split(".").slice(1);
@@ -47,6 +48,16 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 		}
 		doc.document = value;
 		doc.document._key = key;
+		if ( key.startsWith("!folders") ) folders[value._id] = { name: slugify(value.name), folder: value.folder };
+	}
+
+	for ( const folder of Object.values(folders) ) {
+		let parent = folders[folder.folder];
+		folder.path = folder.name;
+		while ( parent ) {
+			folder.path = Path.join(parent.name, folder.name);
+			parent = folders[parent.folder];
+		}
 	}
 
 	const rebuildDocument = (document, embedded) => {
@@ -69,14 +80,26 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 	for ( const { document, ...embedded } of Object.values(documents) ) {
 		rebuildDocument(document, embedded);
 		cleanPackEntry(document, { clearSourceId: true, clearSorting: true });
-		const documentName = document.name ? `${slugify(document.name, {strict: true})}-${document._id}` : key;
-		const documentFilename = `${documentName}.json`;
-		const subfolder = getSubfolderName(document, compendiumData);
+
+		let documentFilename;
+		let subfolder;
+		if ( document._id in folders ) {
+			documentFilename = "_folder.json";
+			subfolder = folders[document._id].path;
+		} else {
+			documentFilename = `${document.name ? `${slugify(document.name, {strict: true})}-${document._id}` : key}.json`;
+			subfolder = argv.legacyFolders
+				? getSubfolderName(document, compendiumData)
+				: folders[document.folder]?.path ?? "";
+		}
 		const documentPath = Path.join(outputDir, subfolder, documentFilename);
 
-		if ( !existsSync(Path.join(outputDir, subfolder)) ) mkdirSync(Path.join(outputDir, subfolder), { recursive: true });
+		if ( !argv.dryRun && !existsSync(Path.join(outputDir, subfolder)) ) {
+			mkdirSync(Path.join(outputDir, subfolder), { recursive: true });
+		}
+
 		const output = `${JSON.stringify(document, null, 2)}\n`;
-		writeFile(documentPath, output, { mode: 0o664 });
+		if ( !argv.dryRun ) writeFile(documentPath, output, { mode: 0o664 });
 		if ( output !== existingFiles[documentPath] ) {
 			if ( existingFiles[documentPath] ) {
 				if ( !argv.quiet ) log(`${Chalk.blue("Updated")} ${Path.join(subfolder, documentFilename)}`);
@@ -91,8 +114,8 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 	}
 
 	for ( const filename of Object.keys(existingFiles) ) {
-		rm(filename);
-		if ( !argv.quiet ) log(`${Chalk.red("Removed")} ${filename}`);
+		if ( !argv.dryRun ) rm(filename);
+		if ( !argv.quiet ) log(`${Chalk.red("Removed")} ${filename.replace(`${outputDir}/`, "")}`);
 		stats.removed++;
 	}
 
@@ -163,19 +186,19 @@ export async function packClassicLevel(packageData, compendiumData, argv) {
 			if ( !argv.quiet ) log(`${Chalk.green("Inserted")} ${file._id}${name ? ` - ${name}` : ""}`);
 			stats.inserted++;
 		} finally {
-			batch.put(key, file);
+			if ( !argv.dryRun ) batch.put(key, file);
 		}
 	}
 
 	for ( const key of await db.keys().all() ) {
 		if ( seenKeys.has(key) ) continue;
 		const document = await db.get(key);
-		batch.del(key);
+		if ( !argv.dryRun ) batch.del(key);
 		if ( !argv.quiet ) log(`${Chalk.red("Removed")} ${document._id}${document.name ? ` - ${document.name}` : ""}`);
 		stats.removed++;
 	}
 
-	await batch.write();
+	if ( !argv.dryRun ) await batch.write();
 	await db.close();
 
 	log(`Packed ${Chalk.magenta(packageData.manifest.id)}.${Chalk.magenta(compendiumData.name)}: ${

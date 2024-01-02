@@ -50,11 +50,21 @@ export default function getCommand() {
 				type: "boolean"
 			});
 
+			yargs.option("legacy-folders", {
+				describe: "Use old-style unpacking organization rather than folders in compendiums for ClassicLevel.",
+				type: "boolean"
+			});
+
 			yargs.option("quiet", {
 				alias: "q",
 				describe: "Disable logging.",
 				type: "boolean"
 			});
+
+			yargs.option("dry-run", {
+				describe: "Run through the process without making any changes. Warning: this will still create the ClassicLevel database if it doesn't exist.",
+				type: "boolean"
+			})
 		},
 		handler: async argv => {
 			switch ( argv.action ) {

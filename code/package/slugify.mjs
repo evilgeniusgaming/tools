@@ -14,7 +14,7 @@ export default function slugify(text, {replacement="-", strict=false}={}) {
 	}, "").trim().toLowerCase();
 
 	// Replace slashes between words with dashes
-	slug = slug.replaceAll(/(\w+)([\\|/])(\w+)/g, "$1-$3");
+	slug = slug.replaceAll(/(\w+)(\s*[\\|/]\s*)(\w+)/g, "$1-$3");
 
 	// Convert any spaces to the replacement character and de-dupe
 	slug = slug.replace(new RegExp(`[\\s${replacement}]+`, "g"), replacement);
