@@ -26,8 +26,9 @@ export default function getSubfolderName(document, compendiumData) {
  * @returns {string}
  */
 function sortAuto(document, config) {
-	const category = document.system.type?.category;
-	const type = document.system.type?.value;
+	if ( document._key?.startsWith("!folders") ) return "";
+	const category = document.system?.type?.category;
+	const type = document.system?.type?.value;
 	const cleanType = document.type.split(".").pop();
 	switch (cleanType) {
 		case "feat":

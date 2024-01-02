@@ -41,7 +41,7 @@ export function generateKeys(document, type) {
 function _generateKeys(document, type, partials) {
 	partials.types.push(types[type].collection);
 	partials.ids.push(document._id);
-	document._key = `!${partials.types.join(".")}!${partials.ids.join(".")}`;
+	document._key = document._key ?? `!${partials.types.join(".")}!${partials.ids.join(".")}`;
 	for ( const collection of collectionsForType(type) ) {
 		const t = typeForCollection(collection);
 		if ( !t || !document[collection]?.length ) continue;

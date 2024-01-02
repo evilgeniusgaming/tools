@@ -50,9 +50,9 @@ export default function getCommand() {
 				type: "boolean"
 			});
 
-			yargs.option("verbose", {
-				alias: "v",
-				describe: "Enable verbose logging.",
+			yargs.option("quiet", {
+				alias: "q",
+				describe: "Disable logging.",
 				type: "boolean"
 			});
 		},

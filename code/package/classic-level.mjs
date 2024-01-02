@@ -31,7 +31,7 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 	if ( !existsSync(outputDir) ) mkdirSync(outputDir, { recursive: true });
 	const existingFiles = await loadSources(outputDir);
 
-	if ( argv.verbose ) log(`Unpacking "${Chalk.magenta(compendiumData.label)}" from ${
+	if ( !argv.quiet ) log(`Unpacking "${Chalk.magenta(compendiumData.label)}" from ${
 		Chalk.blue(filename)} into ${Chalk.blue(outputDir)}`);
 
 	const documents = {};
@@ -79,10 +79,10 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 		writeFile(documentPath, output, { mode: 0o664 });
 		if ( output !== existingFiles[documentPath] ) {
 			if ( existingFiles[documentPath] ) {
-				if ( argv.verbose ) log(`${Chalk.blue("Updated")} ${Path.join(subfolder, documentFilename)}`);
+				if ( !argv.quiet ) log(`${Chalk.blue("Updated")} ${Path.join(subfolder, documentFilename)}`);
 				stats.updated++;
 			} else {
-				if ( argv.verbose ) log(`${Chalk.green("Created")} ${Path.join(subfolder, documentFilename)}`);
+				if ( !argv.quiet ) log(`${Chalk.green("Created")} ${Path.join(subfolder, documentFilename)}`);
 				stats.created++;
 			}
 		}
@@ -92,7 +92,7 @@ export async function unpackClassicLevel(packageData, compendiumData, argv) {
 
 	for ( const filename of Object.keys(existingFiles) ) {
 		rm(filename);
-		if ( argv.verbose ) log(`${Chalk.red("Removed")} ${filename}`);
+		if ( !argv.quiet ) log(`${Chalk.red("Removed")} ${filename}`);
 		stats.removed++;
 	}
 
@@ -125,13 +125,14 @@ export async function packClassicLevel(packageData, compendiumData, argv) {
 	const sourceDir = Path.join(packageData.directory, `packs/_source/${compendiumData.name}`);
 	let inputFiles = await loadSources(sourceDir, { parse: true });
 
-	if ( argv.verbose ) log(`Packing "${Chalk.magenta(compendiumData.label)}" from ${
+	if ( !argv.quiet ) log(`Packing "${Chalk.magenta(compendiumData.label)}" from ${
 		Chalk.blue(sourceDir)} into ${Chalk.blue(filename)}`);
 
 	const flattenFile = (document, type) => {
+		if ( document._key.startsWith("!folders") ) return;
 		for ( const collectionKey of collectionsForType(type) ?? [] ) {
 			const collectionType = typeForCollection(collectionKey);
-			document[collectionKey] = document[collectionKey].reduce((arr, doc) => {
+			document[collectionKey] = document[collectionKey]?.reduce((arr, doc) => {
 				inputFiles[doc._key] = doc;
 				flattenFile(doc, collectionType);
 				arr.push(doc._id);
@@ -155,11 +156,11 @@ export async function packClassicLevel(packageData, compendiumData, argv) {
 		try {
 			const existing = await db.get(key);
 			if ( JSON.stringify(file) !== JSON.stringify(existing) ) {
-				if ( argv.verbose ) log(`${Chalk.blue("Updated")} ${file._id}${name ? ` - ${name}` : ""}`);
+				if ( !argv.quiet ) log(`${Chalk.blue("Updated")} ${file._id}${name ? ` - ${name}` : ""}`);
 				stats.updated++;
 			}
 		} catch(err) {
-			if ( argv.verbose ) log(`${Chalk.green("Inserted")} ${file._id}${name ? ` - ${name}` : ""}`);
+			if ( !argv.quiet ) log(`${Chalk.green("Inserted")} ${file._id}${name ? ` - ${name}` : ""}`);
 			stats.inserted++;
 		} finally {
 			batch.put(key, file);
@@ -170,7 +171,7 @@ export async function packClassicLevel(packageData, compendiumData, argv) {
 		if ( seenKeys.has(key) ) continue;
 		const document = await db.get(key);
 		batch.del(key);
-		if ( argv.verbose ) log(`${Chalk.red("Removed")} ${document._id}${document.name ? ` - ${document.name}` : ""}`);
+		if ( !argv.quiet ) log(`${Chalk.red("Removed")} ${document._id}${document.name ? ` - ${document.name}` : ""}`);
 		stats.removed++;
 	}
 

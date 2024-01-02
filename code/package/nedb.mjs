@@ -25,7 +25,7 @@ export async function unpackNedb(packageData, compendiumData, argv) {
 	if ( !existsSync(outputDir) ) mkdirSync(outputDir, { recursive: true });
 	const existingFiles = await loadSources(outputDir);
 
-	if ( argv.verbose ) log(`Unpacking from ${Chalk.blue(filename)} into ${Chalk.blue(outputDir)}`);
+	if ( !argb.quiet ) log(`Unpacking from ${Chalk.blue(filename)} into ${Chalk.blue(outputDir)}`);
 
 	const stats = { created: 0, updated: 0, removed: 0 };
 	for ( const document of await db.find({}) ) {
@@ -40,10 +40,10 @@ export async function unpackNedb(packageData, compendiumData, argv) {
 		writeFile(documentPath, output, { mode: 0o664 });
 		if ( output !== existingFiles[documentPath] ) {
 			if ( existingFiles[documentPath] ) {
-				if ( argv.verbose ) log(`${Chalk.blue("Updated")} ${Path.join(subfolder, documentFilename)}`);
+				if ( !argb.quiet ) log(`${Chalk.blue("Updated")} ${Path.join(subfolder, documentFilename)}`);
 				stats.updated++;
 			} else {
-				if ( argv.verbose ) log(`${Chalk.green("Created")} ${Path.join(subfolder, documentFilename)}`);
+				if ( !argb.quiet ) log(`${Chalk.green("Created")} ${Path.join(subfolder, documentFilename)}`);
 				stats.created++;
 			}
 		}
@@ -53,7 +53,7 @@ export async function unpackNedb(packageData, compendiumData, argv) {
 
 	for ( const filename of Object.keys(existingFiles) ) {
 		rm(filename);
-		if ( argv.verbose ) log(`${Chalk.red("Removed")} ${filename}`);
+		if ( !argb.quiet ) log(`${Chalk.red("Removed")} ${filename}`);
 		stats.removed++;
 	}
 
@@ -76,7 +76,7 @@ export async function packNedb(packageData, compendiumData, argv) {
 	const sourceDir = Path.join(packageData.directory, `packs/_source/${compendiumData.name}`);
 	const inputFiles = await loadSources(sourceDir, { parse: true });
 
-	if ( argv.verbose ) log(`Packing "${Chalk.magenta(compendiumData.label)}" from ${
+	if ( !argb.quiet ) log(`Packing "${Chalk.magenta(compendiumData.label)}" from ${
 		Chalk.blue(sourceDir)} into ${Chalk.blue(filename)}`);
 
 	const stats = { inserted: 0, updated: 0, removed: 0 };
@@ -88,12 +88,12 @@ export async function packNedb(packageData, compendiumData, argv) {
 		if ( existing ) {
 			await db.update({ _id: file._id }, file);
 			if ( JSON.stringify(file) !== JSON.stringify(existing) ) {
-				if ( argv.verbose ) log(`${Chalk.blue("Updated")} ${file._id}${file.name ? ` - ${file.name}` : ""}`);
+				if ( !argb.quiet ) log(`${Chalk.blue("Updated")} ${file._id}${file.name ? ` - ${file.name}` : ""}`);
 				stats.updated++;
 			}
 		} else {
 			await db.insert(file);
-			if ( argv.verbose ) log(`${Chalk.green("Inserted")} ${file._id}${file.name ? ` - ${file.name}` : ""}`);
+			if ( !argb.quiet ) log(`${Chalk.green("Inserted")} ${file._id}${file.name ? ` - ${file.name}` : ""}`);
 			stats.inserted++;
 		}
 	}
@@ -101,7 +101,7 @@ export async function packNedb(packageData, compendiumData, argv) {
 	const documents = await db.find({ _id: {$nin: Array.from(seenKeys)} });
 	for ( const document of documents ) {
 		await db.remove({ _id: document._id }, {});
-		if ( argv.verbose ) log(`${Chalk.red("Removed")} ${document._id}${document.name ? ` - ${document.name}` : ""}`);
+		if ( !argb.quiet ) log(`${Chalk.red("Removed")} ${document._id}${document.name ? ` - ${document.name}` : ""}`);
 		stats.removed++;
 	}
 
